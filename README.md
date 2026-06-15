@@ -3,7 +3,7 @@
 >[!WARNING]
 >사용시 LICENSE, README 등에 ttparse를 사용했다는 사실을 밝혀주세요.
 
->[!INFO]
+>[!NOTE]
 >이 라이브러리를 사용한 [Changeback](https://github.com/tw0709/changeback)을 확인해보세요!
 
 ## 사용법
