@@ -25,8 +25,8 @@
 ## 예시 코드
 ```python
 import ttparse
-print(find_school_code("부원중학교"))
-print(find_tt_data(find_school_code("부원중학교"), 1, 1, 1))
+print(ttparse.find_school_code("부원중학교"))
+print(ttparse.find_tt_data(find_school_code("부원중학교"), 1, 1, 1))
 ```
 결과값
 ```
