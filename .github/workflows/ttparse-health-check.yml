@@ -1,0 +1,54 @@
+name: ttparse Health Check
+
+on:
+  # 21:30 KST
+  #
+  # ChatGPT 할 일이 22:00에 검사하므로
+  # Actions가 먼저 끝나도록 30분 버퍼를 둠.
+  #
+  # GitHub Actions cron은 UTC 기준임.
+  schedule:
+    - cron: "30 12 * * *"
+
+  # GitHub Actions 화면에서
+  # Run workflow 버튼으로 즉시 테스트 가능
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+
+    # 컴시간 서버가 이상해도
+    # Workflow가 영원히 붙잡혀 있지 않도록 제한
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install requests
+
+      - name: Run ttparse health check
+        run: |
+          python health_check.py
+
+      # health_check.py가 실패한 경우에만
+      # 사고현장 전체를 artifact로 보존
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ttparse-failure-${{ github.run_id }}
+          path: diagnostics/
+          if-no-files-found: warn
+          retention-days: 30
