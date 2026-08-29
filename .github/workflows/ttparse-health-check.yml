@@ -1,17 +1,8 @@
 name: ttparse Health Check
 
 on:
-  # 20:30 KST
-  #
-  # ChatGPT 할 일이 22:00부터 검사하므로
-  # GitHub Actions 지연을 흡수할 수 있도록 1시간 30분 버퍼를 둠.
-  #
-  # GitHub Actions cron은 UTC 기준임.
-  schedule:
-    - cron: "30 11 * * *"
-
-  # GitHub Actions 화면에서
-  # Run workflow 버튼으로 즉시 테스트 가능
+  # Cloudflare Worker가 GitHub API의 workflow_dispatch로 실행함.
+  # 필요하면 GitHub Actions 화면의 Run workflow 버튼으로도 수동 실행 가능.
   workflow_dispatch:
 
 permissions:
