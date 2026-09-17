@@ -34,7 +34,7 @@ def find_tt_data(school_code,grd:int,cls:int,dow:int):
     if not codematch:
         return None
     code=codematch[0].rstrip("_',").lstrip("'") #시간표 찾기용 코드
-    print(key, code)
+    #print(key, code)
     base64_key=base64.b64encode(f"{code}_{school_code}_0_1".encode("utf-8"))
     tt_code=re.findall(r"일일자료\s*\=\s*Q자료\(자료\.자료\d+", response.text)
     if not tt_code:
