@@ -595,6 +595,25 @@ def main() -> int:
         # import 단계 자체에서 깨지는 것도 예외 처리됨.
         import ttparse
 
+        # Keep the original /st response unchanged while also preserving
+        # the decoded script for troubleshooting future parser changes.
+        # Diagnostic decoding must not cause a healthy parser to fail.
+        try:
+            decoded_source = ttparse.decode_st_scripts(source)
+            if decoded_source is not None:
+                decoded_path = DIAG_DIR / "st_decoded.txt"
+                decoded_path.write_text(
+                    decoded_source,
+                    encoding="utf-8",
+                )
+                diagnostics["decoded_st_source_file"] = str(decoded_path)
+            else:
+                diagnostics["decoded_st_source_note"] = (
+                    "No supported encoded script block found"
+                )
+        except Exception as exc:
+            diagnostics["decoded_st_source_error"] = repr(exc)
+
         school_code = (
             ttparse.find_school_code(
                 SCHOOL_NAME
