@@ -14,7 +14,7 @@ DIAG = Path(os.environ.get("TTPARSE_DIAGNOSTICS_DIR","diagnostics"))
 def main():
     DIAG.mkdir(parents=True,exist_ok=True)
     try:
-        with ChromiumClient(DIAG) as c:
+        with ChromiumClient(DIAG, debug=True) as c:
             code = c.search_school(SCHOOL)
             result = c.timetable(code,GRADE,CLS,DOW)
             if result is None:
