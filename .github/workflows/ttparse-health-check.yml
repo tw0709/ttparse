@@ -29,12 +29,12 @@ jobs:
         run: |
           python -m pip install requests
 
-      - name: Run ttparse health check
+      - name: Run ttparse DEBUG health check
         run: |
-          python health_check.py
+          python health_check_debug.py
 
       # health_check.py가 실패한 경우에만
-      # 사고현장 전체를 artifact로 보존
+      # 디버그 사고현장 전체를 artifact로 보존
       - name: Upload failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
