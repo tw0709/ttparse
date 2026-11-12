@@ -1,5 +1,9 @@
 # ttparse
 컴시간 알리미에서 시간표 데이터를 가져옵니다.
+
+>[!TIP]
+> `ttparse_debug.py`는 ChatGPT를 통해 만든것으로, `ttparse.py`가 작동하지 않아도 `ttparse_debug.py`는 작동할 수 있습니다.
+
 >[!WARNING]
 >사용시 LICENSE, README 등에 ttparse를 사용했다는 사실을 밝혀주세요.
 
