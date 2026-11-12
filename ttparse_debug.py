@@ -16,7 +16,8 @@ NAV_TIMEOUT_MS = int(os.environ.get("TTPARSE_NAVIGATION_TIMEOUT_MS", "120000"))
 _last_error = None
 
 class ChromiumClient:
-    def __init__(self, diagnostics_dir="diagnostics"):
+    def __init__(self, diagnostics_dir="diagnostics", debug=False):
+        self.debug = bool(debug)
         self.folder = Path(diagnostics_dir)
         self.started = time.monotonic()
         self.requests = {}
@@ -31,6 +32,8 @@ class ChromiumClient:
                      "phases": [], "network": [], "alerts": [], "js_errors": []}
 
     def phase(self, name):
+        if not self.debug:
+            return
         self.diag["phases"].append({"name": name, "elapsed_ms": round(1000*(time.monotonic()-self.started))})
 
     def on_request(self, request):
@@ -53,11 +56,13 @@ class ChromiumClient:
         self.diag["network"].append(rec)
 
     def on_dialog(self, dialog):
-        self.diag["alerts"].append({"type": dialog.type, "message": dialog.message[:500]})
+        if self.debug:
+            self.diag["alerts"].append({"type": dialog.type, "message": dialog.message[:500]})
         dialog.dismiss()
 
     def __enter__(self):
-        self.folder.mkdir(parents=True, exist_ok=True)
+        if self.debug:
+            self.folder.mkdir(parents=True, exist_ok=True)
         self.pw = sync_playwright().start()
         try:
             kwargs = {"headless": True, "args": ["--no-sandbox", "--disable-dev-shm-usage"]}
@@ -70,13 +75,15 @@ class ChromiumClient:
             self.page = self.context.new_page()
             self.page.set_default_timeout(TIMEOUT_MS)
             self.page.set_default_navigation_timeout(NAV_TIMEOUT_MS)
-            self.page.on("request", self.on_request)
-            self.page.on("requestfinished", lambda r: self.on_finish(r))
-            self.page.on("requestfailed", lambda r: self.on_finish(r, True))
-            self.page.on("response", lambda r: self.responses.append(r) if urlsplit(r.url).hostname in ("comci.net","www.comci.net") else None)
+            # Keep dialogs from blocking navigation in either mode.
             self.page.on("dialog", self.on_dialog)
-            self.page.on("pageerror", lambda e: self.diag["js_errors"].append(str(e)[:1000]))
-            self.page.on("console", lambda m: self.diag["js_errors"].append(m.text[:800]) if m.type == "error" else None)
+            if self.debug:
+                self.page.on("request", self.on_request)
+                self.page.on("requestfinished", lambda r: self.on_finish(r))
+                self.page.on("requestfailed", lambda r: self.on_finish(r, True))
+                self.page.on("response", lambda r: self.responses.append(r) if urlsplit(r.url).hostname in ("comci.net","www.comci.net") else None)
+                self.page.on("pageerror", lambda e: self.diag["js_errors"].append(str(e)[:1000]))
+                self.page.on("console", lambda m: self.diag["js_errors"].append(m.text[:800]) if m.type == "error" else None)
             self.phase("navigate")
             self.page.goto(ST_URL, wait_until="domcontentloaded", timeout=NAV_TIMEOUT_MS)
             self.page.locator("#sc").wait_for(state="attached", timeout=TIMEOUT_MS)
@@ -196,6 +203,8 @@ class ChromiumClient:
         return periods or EMPTY_TIMETABLE
 
     def save(self, status):
+        if not self.debug:
+            return
         self.folder.mkdir(parents=True, exist_ok=True)
         self.diag["status"] = status
         self.diag["elapsed_ms"] = round((time.monotonic()-self.started)*1000)
@@ -241,18 +250,30 @@ class ChromiumClient:
 def get_last_error():
     return _last_error
 
-def _public_call(action):
+def _public_call(action, debug=False):
     global _last_error
     _last_error = None
     try:
-        with ChromiumClient() as client:
+        with ChromiumClient(debug=debug) as client:
             return action(client)
     except Exception as e:
         _last_error = f"{type(e).__name__}: {e}"
+        if debug:
+            # Debug callers get the original traceback; diagnostics are saved.
+            raise
+        # Normal callers keep the original ttparse API's None-on-error behavior.
         return None
 
-def find_school_code(search_query):
-    return _public_call(lambda c: c.search_school(search_query))
+def find_school_code(search_query, debug=False):
+    """Return the school code or None on failure (debug=False).
 
-def find_tt_data(school_code, grd, cls, dow):
-    return _public_call(lambda c: c.timetable(school_code,grd,cls,dow))
+    debug=True writes diagnostic files and raises on failure.
+    """
+    return _public_call(lambda c: c.search_school(search_query), debug=debug)
+
+def find_tt_data(school_code, grd, cls, dow, debug=False):
+    """Return timetable results or None on failure (debug=False).
+
+    debug=True writes diagnostic files and raises on failure.
+    """
+    return _public_call(lambda c: c.timetable(school_code,grd,cls,dow), debug=debug)
