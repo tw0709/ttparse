@@ -1,8 +1,6 @@
 name: ttparse Health Check
 
 on:
-  # Cloudflare Worker가 GitHub API의 workflow_dispatch로 실행함.
-  # 필요하면 GitHub Actions 화면의 Run workflow 버튼으로도 수동 실행 가능.
   workflow_dispatch:
 
 permissions:
@@ -11,9 +9,6 @@ permissions:
 jobs:
   health-check:
     runs-on: ubuntu-latest
-
-    # 컴시간 서버가 이상해도
-    # Workflow가 영원히 붙잡혀 있지 않도록 제한
     timeout-minutes: 10
 
     steps:
@@ -25,16 +20,15 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install dependencies
+      - name: Install Playwright Chromium
         run: |
-          python -m pip install requests
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
 
-      - name: Run ttparse DEBUG health check
+      - name: Run Chromium DEBUG health check
         run: |
           python health_check_debug.py
 
-      # health_check.py가 실패한 경우에만
-      # 디버그 사고현장 전체를 artifact로 보존
       - name: Upload failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
