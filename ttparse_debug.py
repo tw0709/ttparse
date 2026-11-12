@@ -91,12 +91,40 @@ class ChromiumClient:
         if not isinstance(name, str) or not name.strip():
             raise ValueError("School name is empty")
         self.phase("school_search")
+        # Initial HTML ALREADY contains two 'tr.검색' rows (header + help).
+        # Waiting for >=2 rows returns instantly, before the AJAX response.
+        table = self.page.locator("#학교명단검색")
+        previous_html = table.inner_html()
         self.page.locator("#sc").fill(name)
-        self.page.locator("input[type=button][value='검색']").click()
-        self.page.wait_for_function(
-            "() => document.querySelectorAll('#학교명단검색 tr.검색').length >= 2",
-            timeout=TIMEOUT_MS
-        )
+        # The page's real search handler is attached to onchange. Dispatch
+        # one change, avoiding the duplicate AJAX caused by blur + click.
+        self.page.locator("#sc").dispatch_event("change")
+
+        # school_ra() / 학교명단_출력하기() replaces the table markup
+        # *after* QAjaxSchool returns and the browser decodes enc5.
+        # This also completes for valid zero-result searches.
+        try:
+            self.page.wait_for_function(
+                """previous => {
+                    const table = document.getElementById('학교명단검색');
+                    return !!table && table.innerHTML !== previous;
+                }""",
+                arg=previous_html,
+                timeout=min(TIMEOUT_MS, 60000),
+            )
+        except Exception as exc:
+            self.diag["search_result_timeout"] = {
+                "school": name,
+                "alerts": self.diag["alerts"][-5:],
+                "js_errors": self.diag["js_errors"][-5:],
+                "requests": self.diag["network"][-10:],
+                "table_text": table.inner_text()[:1000],
+            }
+            raise TimeoutError(
+                "School search did not update its result table; "
+                "inspect network, alerts and screenshot in diagnostics"
+            ) from exc
+        self.phase("school_search_rendered")
         links = self.page.locator("#학교명단검색 a[onclick^='sc_disp']")
         rows = links.evaluate_all("""els => els.map((e,i) => ({
             index:i, name:(e.textContent||'').trim(),
