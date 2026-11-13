@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 import time
+import traceback
 from pathlib import Path
 from datetime import datetime, timezone
 from urllib.parse import urlsplit
@@ -15,9 +17,28 @@ TIMEOUT_MS = int(os.environ.get("TTPARSE_BROWSER_TIMEOUT_MS", "150000"))
 NAV_TIMEOUT_MS = int(os.environ.get("TTPARSE_NAVIGATION_TIMEOUT_MS", "120000"))
 _last_error = None
 
+
+def _debug_enabled():
+    """Enable diagnostics with: python changeback.py -debug.
+
+    Also accepts --debug and TTPARSE_DEBUG=1 for applications that
+    reject unknown command-line arguments.
+    """
+    cli_enabled = any(
+        arg.lower() in ("-debug", "--debug")
+        for arg in sys.argv[1:]
+    )
+    env_enabled = os.environ.get("TTPARSE_DEBUG", "").strip().lower() in (
+        "1", "true", "yes", "on",
+    )
+    return cli_enabled or env_enabled
+
+
 class ChromiumClient:
-    def __init__(self, diagnostics_dir="diagnostics", debug=False):
-        self.debug = bool(debug)
+    def __init__(self, diagnostics_dir=None, debug=None):
+        self.debug = _debug_enabled() if debug is None else bool(debug)
+        if diagnostics_dir is None:
+            diagnostics_dir = os.environ.get("TTPARSE_DIAGNOSTICS_DIR", "diagnostics")
         self.folder = Path(diagnostics_dir)
         self.started = time.monotonic()
         self.requests = {}
@@ -34,7 +55,9 @@ class ChromiumClient:
     def phase(self, name):
         if not self.debug:
             return
-        self.diag["phases"].append({"name": name, "elapsed_ms": round(1000*(time.monotonic()-self.started))})
+        elapsed_ms = round(1000 * (time.monotonic() - self.started))
+        self.diag["phases"].append({"name": name, "elapsed_ms": elapsed_ms})
+        print(f"[ttparse debug] {name} ({elapsed_ms} ms)", file=sys.stderr, flush=True)
 
     def on_request(self, request):
         self.requests[request] = (time.monotonic(), {"method": request.method, "url": request.url, "type": request.resource_type})
@@ -250,30 +273,39 @@ class ChromiumClient:
 def get_last_error():
     return _last_error
 
-def _public_call(action, debug=False):
+def _public_call(action):
+    """Preserve the original ttparse return contract in all CLI modes."""
     global _last_error
     _last_error = None
+    debug = _debug_enabled()
     try:
         with ChromiumClient(debug=debug) as client:
             return action(client)
-    except Exception as e:
-        _last_error = f"{type(e).__name__}: {e}"
+    except Exception as exc:
+        _last_error = f"{type(exc).__name__}: {exc}"
         if debug:
-            # Debug callers get the original traceback; diagnostics are saved.
-            raise
-        # Normal callers keep the original ttparse API's None-on-error behavior.
+            # Report the traceback without forcing Changeback to handle
+            # a new exception type. The return value remains None.
+            details = traceback.format_exc()
+            print("[ttparse debug] " + details, file=sys.stderr, flush=True)
+            try:
+                folder = Path(os.environ.get("TTPARSE_DIAGNOSTICS_DIR", "diagnostics"))
+                folder.mkdir(parents=True, exist_ok=True)
+                (folder / "last_error.txt").write_text(details, encoding="utf-8")
+            except OSError as logging_error:
+                print("[ttparse debug] Failed to write error log: " +
+                      str(logging_error), file=sys.stderr, flush=True)
         return None
 
-def find_school_code(search_query, debug=False):
-    """Return the school code or None on failure (debug=False).
 
-    debug=True writes diagnostic files and raises on failure.
-    """
-    return _public_call(lambda c: c.search_school(search_query), debug=debug)
+def find_school_code(search_query):
+    """Return school code or None. Enable logs via CLI -debug."""
+    return _public_call(lambda client: client.search_school(search_query))
 
-def find_tt_data(school_code, grd, cls, dow, debug=False):
-    """Return timetable results or None on failure (debug=False).
 
-    debug=True writes diagnostic files and raises on failure.
-    """
-    return _public_call(lambda c: c.timetable(school_code,grd,cls,dow), debug=debug)
+def find_tt_data(school_code, grd, cls, dow):
+    """Return timetable or None. Enable logs via CLI -debug."""
+    return _public_call(
+        lambda client: client.timetable(school_code, grd, cls, dow)
+    )
+
