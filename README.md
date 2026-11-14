@@ -8,11 +8,13 @@
 컴시간 알리미의 시간표 데이터를 조회하는 비공식 Python 모듈입니다.
 
 [![Health Check](https://github.com/tw0709/ttparse/actions/workflows/ttparse-health-check.yml/badge.svg?branch=main)](https://github.com/tw0709/ttparse/actions/workflows/ttparse-health-check.yml)
-
+(debug용 기준)
 <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
 <img src="https://img.shields.io/badge/Unofficial-64748B?style=flat-square" alt="Unofficial">
 
 <sub>© 2026 강태웅</sub>
+
+<sub>위 Health Check는 ttparse_debug.py 기준입니다.</sub>
 
 </div>
 
@@ -86,6 +88,7 @@ if code is not None:
 
 **[GitHub Actions 실행 기록](https://github.com/tw0709/ttparse/actions/workflows/ttparse-health-check.yml)**
 
+<sub>위 Health Check는 ttparse_debug.py 기준입니다.</sub>
 </div>
 
 GitHub Actions를 통해 시간표 조회 기능을 점검합니다.
@@ -136,6 +139,7 @@ ttparse를 활용한 Windows 바탕화면 시간표 프로그램입니다.
 (동일 개발자 제작)
 
 [![Changeback](https://img.shields.io/badge/View-Changeback-2563EB?style=for-the-badge)](https://github.com/tw0709/changeback)
+
 
 </div>
 
