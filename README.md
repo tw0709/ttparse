@@ -1,6 +1,7 @@
 # ttparse
 
 [![ttparse Health Check](https://github.com/tw0709/ttparse/actions/workflows/ttparse-health-check.yml/badge.svg?branch=main)](https://github.com/tw0709/ttparse/actions/workflows/ttparse-health-check.yml)
+
 컴시간 알리미에서 시간표 데이터를 가져옵니다.
 
 >[!TIP]
