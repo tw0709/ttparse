@@ -8,7 +8,6 @@
 컴시간 알리미의 시간표 데이터를 조회하는 비공식 Python 모듈입니다.
 
 [![Health Check](https://github.com/tw0709/ttparse/actions/workflows/ttparse-health-check.yml/badge.svg?branch=main)](https://github.com/tw0709/ttparse/actions/workflows/ttparse-health-check.yml)
-(debug용 기준)
 <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
 <img src="https://img.shields.io/badge/Unofficial-64748B?style=flat-square" alt="Unofficial">
 
