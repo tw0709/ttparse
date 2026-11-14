@@ -28,7 +28,7 @@
 > [!TIP]
 > `ttparse_debug.py`는 ChatGPT를 활용하여 유지보수하고 있습니다.
 > 
-> 만약 `ttparse.py`가 작동하지 않을 시, `ttparse_debug.py` 사용을 고려해보세요.
+> `ttparse.py`가 작동하지 않을 시, `ttparse_debug.py` 사용을 고려해보세요.
 
 ## 사용 방법
 
